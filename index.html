@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Registro de Presença</title>
+</head>
+<body>
+    <h1>Registro de Presença da Turma</h1>
+    <div id="turma-info"></div>
+    <div id="registro-presenca">
+        <label for="participante-select">Participante:</label>
+        <select id="participante-select"></select>
+        <button onclick="registrarPresenca('encontro')">Registrar Encontro</button>
+        <button onclick="registrarPresenca('missa')">Registrar Missa</button>
+    </div>
+    <h2>Presenças Registradas</h2>
+    <ul id="presencas-list"></ul>
+
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
