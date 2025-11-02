@@ -2,22 +2,131 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <title>Registro de Presença</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Presença Catequese</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f4f4f9; padding: 20px; color: #333; }
+        h1, h2, h3 { color: #007bff; border-bottom: 2px solid #007bff; padding-bottom: 5px; margin-top: 20px; }
+        section { background-color: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); }
+        input[type="text"], select, textarea { width: 100%; padding: 10px; margin: 8px 0; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+        button { background-color: #007bff; color: white; padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; margin-top: 10px; transition: background-color 0.3s; }
+        button:hover { background-color: #0056b3; }
+        ul#lista-turmas li { background-color: #e9ecef; margin: 5px 0; padding: 10px; border-radius: 4px; cursor: pointer; }
+        ul#lista-turmas li:hover { background-color: #cfd6de; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        table, th, td { border: 1px solid #ddd; }
+        th, td { padding: 10px; text-align: left; }
+        th { background-color: #f2f2f2; }
+    </style>
 </head>
 <body>
-    <h1>Registro de Presença da Turma</h1>
-    <div id="turma-info"></div>
-    <div id="registro-presenca">
-        <label for="participante-select">Participante:</label>
-        <select id="participante-select"></select>
-        <button onclick="registrarPresenca('encontro')">Registrar Encontro</button>
-        <button onclick="registrarPresenca('missa')">Registrar Missa</button>
-    </div>
-    <h2>Presenças Registradas</h2>
-    <ul id="presencas-list"></ul>
+    
+    <!-- 1. PAINEL ADMINISTRATIVO (Visível sem ID na URL) -->
+    <div id="admin-panel" style="display: none;">
+        <h1>Painel Administrativo</h1>
+        
+        <section>
+            <h2>Gerenciar Turmas (CRUD)</h2>
+            <form id="form-turma">
+                <input type="text" id="turma-id" placeholder="ID da Turma (Ex: A1)" required>
+                <input type="text" id="turma-nome" placeholder="Nome da Turma" required>
+                <input type="text" id="turma-catequista" placeholder="Nome do Catequista" required>
+                <!-- Campo para a chave secreta que será usada no link do catequista -->
+                <input type="text" id="turma-chave" placeholder="Chave Secreta (Senha de Acesso da Turma)" required>
+                <button type="submit">Adicionar/Atualizar Turma</button>
+            </form>
+            
+            <h3>Adicionar Turmas em Lote</h3>
+            <p>Formato: ID,Nome,Catequista,ChaveSecreta (uma por linha)</p>
+            <textarea id="turmas-lote" rows="5" placeholder="A1,Eucaristia A,Maria Silva,senha123&#10;B2,Crisma B,João Souza,chave456"></textarea>
+            <button onclick="adicionarTurmasEmLote()">Adicionar em Lote</button>
+            
+            <h3>Turmas Existentes (Clique para Editar)</h3>
+            <ul id="lista-turmas"></ul>
+        </section>
 
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
-    <script src="app.js"></script>
+        <section>
+            <h2>Gerenciar Catequizandos (CRUD)</h2>
+            <label for="turma-selecionada-participante">Vincular à Turma:</label>
+            <select id="turma-selecionada-participante" required>
+                <option value="">Carregando Turmas...</option>
+            </select>
+
+            <form id="form-participante">
+                <input type="text" id="participante-id" placeholder="ID do Catequizando (Ex: p001)" required>
+                <input type="text" id="participante-nome" placeholder="Nome Completo" required>
+                <button type="submit">Adicionar/Atualizar Catequizando</button>
+            </form>
+
+            <h3>Adicionar Catequizandos em Lote</h3>
+            <p>Formato: ID,Nome (uma por linha, vincular à turma selecionada acima)</p>
+            <textarea id="participantes-lote" rows="5" placeholder="p001,Ana Costa&#10;p002,Bruno Lopes"></textarea>
+            <button onclick="adicionarParticipantesEmLote()">Adicionar em Lote</button>
+        </section>
+        
+        <section>
+            <h2>Relatórios de Presença</h2>
+            <label for="turma-selecionada-relatorio">Selecionar Turma:</label>
+            <select id="turma-selecionada-relatorio" required>
+                <option value="">Carregando Turmas...</option>
+            </select>
+            <button onclick="gerarRelatorio()">Gerar Relatório</button>
+            <div id="resultado-relatorio"></div>
+        </section>
+    </div>
+
+
+    <!-- 2. PÁGINA DO CATEQUISTA (Visível com ID na URL) -->
+    <div id="catequista-page" style="display: none;">
+        <h1 id="titulo-turma">Registro de Presença</h1>
+        <p id="turma-info" style="font-size: 1.2em; font-weight: bold;"></p>
+        
+        <section id="registro-presenca">
+            <h2>Marcar Presença</h2>
+            <select id="participante-select">
+                <option value="">Carregando Participantes...</option>
+            </select>
+            <button onclick="registrarPresenca('encontro')">Registrar Presença no Encontro</button>
+            <button onclick="registrarPresenca('missa')" style="background-color: #28a745;">Registrar Presença na Missa</button>
+        </section>
+        
+        <section>
+            <h2>Presenças Registradas (Últimos 10 Encontros/Missas)</h2>
+            <ul id="presencas-list"></ul>
+        </section>
+    </div>
+
+    <!-- --------------------------------------- -->
+    <!-- Configurações e Script -->
+    <!-- --------------------------------------- -->
+    <script type="module">
+        // Importa módulos necessários do Firebase
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js";
+        import { getFirestore, doc, getDoc, addDoc, setDoc, updateDoc, deleteDoc, onSnapshot, collection, query, where, getDocs, orderBy, limit, FieldValue, Timestamp, writeBatch } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js";
+
+        // Variáveis globais para simular o ambiente Canvas
+        const firebaseConfig = {
+            apiKey: "COLOQUE_SUA_API_KEY_AQUI", // SUBSTITUA PELA SUA CHAVE REAL!
+            authDomain: "dados-catequese.firebaseapp.com",
+            projectId: "dados-catequese",
+            storageBucket: "dados-catequese.appspot.com",
+            messagingSenderId: "SEU_SENDER_ID",
+            appId: "SEU_APP_ID"
+        };
+
+        // Inicializa o Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // Exporta variáveis e funções para uso no script app.js
+        window.db = db;
+        window.FieldValue = FieldValue;
+        window.writeBatch = writeBatch;
+        
+        // Inclui o script app.js que contém toda a lógica
+        const script = document.createElement('script');
+        script.src = 'app.js';
+        document.body.appendChild(script);
+    </script>
 </body>
 </html>
