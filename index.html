@@ -21,6 +21,11 @@
 </head>
 <body>
     
+    <!-- MENSAGEM DE STATUS DA CONEXÃO -->
+    <div id="status-message" style="color: red; background-color: #ffe0e0; border: 1px solid red; padding: 10px; margin-bottom: 15px; display: none;">
+        Verificando conexão com o Firebase...
+    </div>
+
     <!-- 1. PAINEL ADMINISTRATIVO (Visível sem ID na URL) -->
     <div id="admin-panel" style="display: none;">
         <h1>Painel Administrativo</h1>
@@ -101,8 +106,10 @@
     <!-- --------------------------------------- -->
     <script type="module">
         // Importa módulos necessários do Firebase
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js";
-        import { getFirestore, doc, getDoc, addDoc, setDoc, updateDoc, deleteDoc, onSnapshot, collection, query, where, getDocs, orderBy, limit, FieldValue, Timestamp, writeBatch } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js";
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+        
+        // Importações modulares: getFirestore, doc, collection, query, where, getDocs, onSnapshot, etc.
+        import { getFirestore, doc, getDoc, addDoc, setDoc, updateDoc, deleteDoc, onSnapshot, collection, query, where, getDocs, orderBy, limit, serverTimestamp, Timestamp, writeBatch } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
 
         // Variáveis globais para simular o ambiente Canvas
         const firebaseConfig = {
@@ -111,27 +118,47 @@
             projectId: "dados-catequese",
             storageBucket: "dados-catequese.firebasestorage.app",
             messagingSenderId: "420948905617",
-            appId: "1:420948905617:web:b08e29cf50873ff804f930"
+            appId: "1:420948905617:web:b08e29cf5073ff804f930"
         };
 
-        // Inicializa o Firebase
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-
+        // Variáveis de escopo
+        let app;
+        let db;
+        
         // Variáveis de controle de roteamento
         const urlParams = new URLSearchParams(window.location.search);
         const turmaId = urlParams.get('turmaId');
         const chaveSecreta = urlParams.get('key');
+        
+        const statusMessageDiv = document.getElementById('status-message');
+        statusMessageDiv.style.display = 'block'; // Mostra a div de status
 
-        // Função de inicialização
+        // 1. Tenta inicializar o Firebase
+        try {
+            app = initializeApp(firebaseConfig);
+            db = getFirestore(app);
+            statusMessageDiv.innerHTML = 'Conexão Firebase OK. Carregando interface...';
+            statusMessageDiv.style.backgroundColor = '#e6ffe6';
+            statusMessageDiv.style.borderColor = '#00cc00';
+            statusMessageDiv.style.color = '#006600';
+        } catch (error) {
+            statusMessageDiv.innerHTML = `ERRO CRÍTICO DE INICIALIZAÇÃO DO FIREBASE. Detalhe: ${error.message}.`;
+            console.error("ERRO CRÍTICO DE INICIALIZAÇÃO DO FIREBASE:", error);
+            // Se falhar, impede o carregamento da interface principal.
+            window.onload = function() {}; 
+        }
+
+        // 2. Lógica de Roteamento (Executada após a conexão ser estabelecida)
         window.onload = function() {
             if (turmaId && chaveSecreta) {
                 // Modo CATEQUISTA (Com ID e CHAVE na URL)
                 document.getElementById('catequista-page').style.display = 'block';
+                document.getElementById('admin-panel').style.display = 'none';
                 validarChaveEIniciar(turmaId, chaveSecreta);
             } else {
                 // Modo ADMINISTRADOR (Sem ID/Chave na URL)
                 document.getElementById('admin-panel').style.display = 'block';
+                document.getElementById('catequista-page').style.display = 'none';
                 carregarTurmas(); 
                 
                 // Adicionar Listeners de Formulário Admin
@@ -157,8 +184,9 @@
          */
         async function validarChaveEIniciar(turmaId, chaveSecreta) {
             try {
-                const turmaRef = db.collection("turmas").doc(turmaId);
-                const turmaDoc = await turmaRef.get();
+                // CORREÇÃO: Usando doc() modular
+                const turmaRef = doc(db, "turmas", turmaId);
+                const turmaDoc = await getDoc(turmaRef); // Usando getDoc() modular
 
                 if (!turmaDoc.exists) {
                      document.getElementById('catequista-page').innerHTML = "<h1>Erro: Turma Inexistente.</h1>";
@@ -175,10 +203,11 @@
                 document.getElementById('turma-info').innerHTML = `Turma: ${data.nome} | Catequista: ${data.catequista}`;
                 carregarParticipantes(turmaId);
                 visualizarPresencas(turmaId);
-
+                document.getElementById('status-message').style.display = 'none'; // Esconde o status após carregar
             } catch (error) {
                 console.error("Erro na validação da chave ou comunicação:", error);
                 document.getElementById('catequista-page').innerHTML = `<h1>Erro: Falha ao carregar dados. Detalhes: ${error.message}</h1>`;
+                document.getElementById('status-message').innerHTML = `ERRO: Falha ao carregar dados da turma.`;
             }
         }
 
@@ -187,7 +216,10 @@
          * @param {string} turmaId ID da turma.
          */
         function carregarParticipantes(turmaId) {
-            db.collection("participantes").where("turma_id", "==", turmaId).get()
+            // CORREÇÃO: Usando query() e collection() modulares, e getDocs()
+            const participantesQuery = query(collection(db, "participantes"), where("turma_id", "==", turmaId));
+            
+            getDocs(participantesQuery)
                 .then((querySnapshot) => {
                     const select = document.getElementById('participante-select');
                     select.innerHTML = '<option value="">Selecione o Catequizando</option>'; // Limpa e adiciona opção padrão
@@ -215,11 +247,12 @@
                 return;
             }
 
-            db.collection("presencas").add({
+            // CORREÇÃO: Usando addDoc() modular
+            addDoc(collection(db, "presencas"), {
                 participante_id: participanteId,
                 turma_id: turmaId,
                 tipo: tipo,
-                data: FieldValue.serverTimestamp(),
+                data: serverTimestamp(),
                 chave_secreta: chaveSecreta // ESSENCIAL para a regra de segurança do Firestore
             })
             .then(() => {
@@ -237,9 +270,16 @@
             const list = document.getElementById('presencas-list');
             list.innerHTML = '<li>Carregando registros...</li>'; 
 
+            // CORREÇÃO: Usando query() modular e onSnapshot() com a query
+            const presencasQuery = query(
+                collection(db, "presencas"),
+                where("turma_id", "==", turmaId),
+                orderBy("data", "desc"),
+                limit(10)
+            );
+
             // O uso de onSnapshot mantém a lista atualizada em tempo real
-            db.collection("presencas").where("turma_id", "==", turmaId)
-                .orderBy("data", "desc").limit(10).onSnapshot(async (snapshot) => {
+            onSnapshot(presencasQuery, async (snapshot) => {
                 list.innerHTML = '';
                 const presencaDocs = snapshot.docs;
 
@@ -248,12 +288,12 @@
                     return;
                 }
 
-                for (const doc of presencaDocs) {
-                    const registro = doc.data();
+                for (const docSnapshot of presencaDocs) { // Renomeado para docSnapshot
+                    const registro = docSnapshot.data();
                     const item = document.createElement('li');
                     
-                    // Busca o nome do participante para exibição
-                    const pDoc = await db.collection("participantes").doc(registro.participante_id).get();
+                    // CORREÇÃO: Usando doc() e getDoc() modulares
+                    const pDoc = await getDoc(doc(db, "participantes", registro.participante_id));
                     const nome = pDoc.data() ? pDoc.data().nome : "Participante Desconhecido";
                     
                     const dataObj = registro.data ? new Date(registro.data.toDate()) : new Date();
@@ -277,7 +317,9 @@
          * Carrega todas as turmas para as listas e selects do painel administrativo.
          */
         function carregarTurmas() {
-            db.collection("turmas").get().then((snapshot) => {
+            // NOTA IMPORTANTE: Esta função requer que as Regras de Segurança do Firebase
+            // permitam 'read' na coleção 'turmas' para usuários não autenticados (if true).
+            getDocs(collection(db, "turmas")).then((snapshot) => {
                 const listaTurmas = document.getElementById('lista-turmas');
                 const selectParticipante = document.getElementById('turma-selecionada-participante');
                 const selectRelatorio = document.getElementById('turma-selecionada-relatorio');
@@ -302,7 +344,16 @@
                     selectParticipante.add(optionP);
                     selectRelatorio.add(optionR);
                 });
-            }).catch(error => console.error("Erro ao carregar turmas:", error));
+                document.getElementById('status-message').style.display = 'none'; // Esconde o status após carregar
+            }).catch(error => {
+                console.error("Erro ao carregar turmas:", error);
+                document.getElementById('lista-turmas').innerHTML = '<li><strong>ERRO: Permissão negada!</strong> Por favor, verifique se as suas Regras de Segurança do Firebase permitem "read" na coleção "turmas".</li>';
+                document.getElementById('status-message').innerHTML = `ERRO DE PERMISSÃO: ${error.message}. Acesso à gestão de turmas negado.`;
+                document.getElementById('status-message').style.backgroundColor = '#ffcccc';
+                document.getElementById('status-message').style.borderColor = '#cc0000';
+                document.getElementById('status-message').style.color = '#cc0000';
+                document.getElementById('status-message').style.display = 'block';
+            });
         }
 
         /**
@@ -324,7 +375,8 @@
             const catequista = document.getElementById('turma-catequista').value.trim();
             const chave_secreta = document.getElementById('turma-chave').value.trim();
 
-            db.collection("turmas").doc(id).set({
+            // CORREÇÃO: Usando doc() e setDoc() modulares
+            setDoc(doc(db, "turmas", id), {
                 nome: nome,
                 catequista: catequista,
                 chave_secreta: chave_secreta
@@ -345,13 +397,14 @@
             if (!loteTexto) return;
 
             const linhas = loteTexto.split('\n');
-            const batch = db.batch();
+            const batch = writeBatch(db); // Usa writeBatch modular
 
             linhas.forEach(linha => {
                 const partes = linha.split(',').map(s => s.trim());
                 if (partes.length === 4) {
                     const [id, nome, catequista, chave_secreta] = partes;
-                    const turmaRef = db.collection("turmas").doc(id);
+                    // CORREÇÃO: Usando doc() modular
+                    const turmaRef = doc(db, "turmas", id);
                     batch.set(turmaRef, { nome, catequista, chave_secreta }, { merge: true });
                 }
             });
@@ -378,7 +431,8 @@
                 return;
             }
 
-            db.collection("participantes").doc(id).set({
+            // CORREÇÃO: Usando doc() e setDoc() modulares
+            setDoc(doc(db, "participantes", id), {
                 nome: nome,
                 turma_id: turmaId
             }, { merge: true })
@@ -401,12 +455,13 @@
             }
 
             const linhas = loteTexto.split('\n');
-            const batch = db.batch();
+            const batch = writeBatch(db); // Usa writeBatch modular
 
             linhas.forEach(linha => {
                 const [id, nome] = linha.split(',').map(s => s.trim());
                 if (id && nome) {
-                    const participanteRef = db.collection("participantes").doc(id);
+                    // CORREÇÃO: Usando doc() modular
+                    const participanteRef = doc(db, "participantes", id);
                     batch.set(participanteRef, { nome, turma_id: turmaId }, { merge: true });
                 }
             });
@@ -434,17 +489,23 @@
 
             try {
                 // 1. Obter participantes da turma
-                const participantesSnapshot = await db.collection("participantes").where("turma_id", "==", turmaId).get();
+                // CORREÇÃO: Usando query(), collection() e getDocs() modulares
+                const participantesQuery = query(collection(db, "participantes"), where("turma_id", "==", turmaId));
+                const participantesSnapshot = await getDocs(participantesQuery);
+                
                 const participantes = {};
                 participantesSnapshot.forEach(doc => {
                     participantes[doc.id] = { nome: doc.data().nome, presencas: 0, faltas: 0 };
                 });
 
                 // 2. Obter todas as presenças de 'encontro' (para calcular total de encontros e presenças)
-                const presencasSnapshot = await db.collection("presencas")
-                    .where("turma_id", "==", turmaId)
-                    .where("tipo", "==", "encontro") 
-                    .get();
+                // CORREÇÃO: Usando query(), collection() e getDocs() modulares
+                const presencasQuery = query(
+                    collection(db, "presencas"),
+                    where("turma_id", "==", turmaId),
+                    where("tipo", "==", "encontro")
+                );
+                const presencasSnapshot = await getDocs(presencasQuery);
                 
                 const datasEncontros = new Set();
                 
