@@ -17,10 +17,27 @@
         table, th, td { border: 1px solid #ddd; }
         th, td { padding: 10px; text-align: left; }
         th { background-color: #f2f2f2; }
+        /* ESTILO PARA IMAGEM DE CABEÇALHO */
+        .header-image {
+            width: 100%;
+            max-width: 1200px;
+            height: auto;
+            display: block;
+            margin: 0 auto 20px auto; 
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
     </style>
 </head>
 <body>
     
+    <!-- CABEÇALHO COM IMAGEM (Link direto para o GitHub) -->
+    <!-- Por favor, verifique se o link abaixo está correto e é o link RAW do seu repositório. -->
+    <img src="https://raw.githubusercontent.com/pnscpastoraldacatequese-commits/RegistroDePresenca2026/main/CABE%C3%87ALHO.jpeg" 
+         alt="Banner de Cabeçalho - Registro de Presença Catequese" 
+         class="header-image"
+         onerror="this.src='https://placehold.co/1200x150/4c7cbf/ffffff?text=FALHA+AO+CARREGAR+IMAGEM+DO+GITHUB';">
+
     <!-- MENSAGEM DE STATUS DA CONEXÃO -->
     <div id="status-message" style="color: red; background-color: #ffe0e0; border: 1px solid red; padding: 10px; margin-bottom: 15px; display: none;">
         Verificando conexão com o Firebase...
@@ -37,7 +54,7 @@
                 <input type="text" id="turma-nome" placeholder="Nome da Turma" required>
                 <input type="text" id="turma-catequista" placeholder="Nome do Catequista" required>
                 <!-- Campo para a chave secreta que será usada no link do catequista -->
-                <input type="text" id="turma-chave" placeholder="Chave Secreta (Senha de Acesso da Turma)" required>
+                <input type="text" id="turma-chave" placeholder="Chave Secreta (Senha de Accesso da Turma)" required>
                 <button type="submit">Adicionar/Atualizar Turma</button>
             </form>
             
