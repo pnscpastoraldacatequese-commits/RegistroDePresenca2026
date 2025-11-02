@@ -565,18 +565,19 @@
             const targetDay = document.getElementById('range-target-day').value;
             const docId = document.getElementById('range-target-doc').value;
             const statusDiv = document.getElementById('range-status');
-            statusDiv.textContent = '';
-            statusDiv.style.color = '#333';
+            
+            statusDiv.textContent = 'Iniciando processamento...';
+            statusDiv.style.color = '#007bff';
 
             if (!startStr || !endStr || !targetDay || !docId) {
-                statusDiv.textContent = "Por favor, preencha a Data de Início, Data Final, Dia da Semana e o Documento de Destino.";
+                statusDiv.textContent = "ERRO: Por favor, preencha a Data de Início, Data Final, Dia da Semana e o Documento de Destino.";
                 statusDiv.style.color = '#cc0000';
                 return;
             }
             
             // Verifica formato AAAA-MM-DD
             if (!/^\d{4}-\d{2}-\d{2}$/.test(startStr) || !/^\d{4}-\d{2}-\d{2}$/.test(endStr)) {
-                statusDiv.textContent = "O formato de data DEVE ser AAAA-MM-DD. Exemplo correto: 2026-03-03. Verifique se não está usando DD/MM/AAAA.";
+                statusDiv.textContent = "ERRO DE FORMATO: As datas DEVE ser AAAA-MM-DD (ex: 2026-03-03). Verifique se não está usando DD/MM/AAAA.";
                 statusDiv.style.color = '#cc0000';
                 return;
             }
@@ -584,7 +585,6 @@
             try {
                 let generatedDates;
                 
-                // O valor do select agora corresponde ao índice do dia da semana em JS (0=Dom, 1=Seg, 2=Ter...)
                 let jsDay;
                 if (targetDay === 'all') {
                     jsDay = 'all';
@@ -595,7 +595,7 @@
                 generatedDates = generateDatesInRange(startStr, endStr, jsDay);
                 
                 if (generatedDates.length === 0) {
-                    statusDiv.textContent = "Nenhuma data encontrada no intervalo para o dia da semana selecionado. Verifique se o intervalo está correto.";
+                    statusDiv.textContent = "Nenhuma data encontrada no intervalo para o dia da semana selecionado. Verifique o intervalo.";
                     statusDiv.style.color = '#cc0000';
                     return;
                 }
@@ -612,8 +612,9 @@
                 carregarDatasCalendario(); // Recarrega os textareas de visualização
 
             } catch (error) {
-                console.error("Erro na geração ou salvamento do intervalo:", error);
-                statusDiv.textContent = `Erro: ${error.message}`;
+                console.error("ERRO CRÍTICO na geração ou salvamento do intervalo:", error);
+                // Reporta erro de permissão ou de cálculo no status
+                statusDiv.textContent = `ERRO: Falha ao salvar no Firebase. Verifique o Console (F12) e as Regras de Segurança. Detalhe: ${error.message}`;
                 statusDiv.style.color = '#cc0000';
             }
         }
