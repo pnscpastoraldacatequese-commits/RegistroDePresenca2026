@@ -17,22 +17,29 @@
         table, th, td { border: 1px solid #ddd; }
         th, td { padding: 10px; text-align: left; }
         th { background-color: #f2f2f2; }
-        /* ESTILO PARA IMAGEM DE CABEÇALHO */
         .header-image {
-            width: 100%;
-            max-width: 1200px;
-            height: auto;
-            display: block;
-            margin: 0 auto 20px auto; 
-            border-radius: 8px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            width: 100%; max-width: 1200px; height: auto; display: block; margin: 0 auto 20px auto; 
+            border-radius: 8px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
         }
+        
+        /* Estilos da Matriz de Presença */
+        .matriz-container { overflow-x: auto; }
+        .matriz-presenca th, .matriz-presenca td { white-space: nowrap; padding: 5px; text-align: center; }
+        .matriz-presenca select { 
+            padding: 2px; border: 1px solid #ccc; border-radius: 3px; 
+            font-size: 0.8em; min-width: 60px; height: 28px;
+            text-align: center;
+        }
+        /* Cores para os status */
+        .P { background-color: #d4edda; color: #155724; } /* Verde */
+        .F { background-color: #f8d7da; color: #721c24; } /* Vermelho */
+        .FJ { background-color: #fff3cd; color: #856404; } /* Amarelo */
+        .FR { background-color: #cce5ff; color: #004085; } /* Azul */
     </style>
 </head>
 <body>
     
     <!-- CABEÇALHO COM IMAGEM (Link direto para o GitHub) -->
-    <!-- Por favor, verifique se o link abaixo está correto e é o link RAW do seu repositório. -->
     <img src="https://raw.githubusercontent.com/pnscpastoraldacatequese-commits/RegistroDePresenca2026/main/CABE%C3%87ALHO.jpeg" 
          alt="Banner de Cabeçalho - Registro de Presença Catequese" 
          class="header-image"
@@ -75,7 +82,6 @@
             </select>
 
             <form id="form-participante">
-                <!-- ID MANUAL REMOVIDO: O ID será gerado automaticamente pelo Firestore -->
                 <input type="text" id="participante-nome" placeholder="Nome Completo" required>
                 <button type="submit">Adicionar Catequizando</button>
             </form>
@@ -84,6 +90,34 @@
             <p>Formato: Nome Completo (uma por linha, o ID será gerado automaticamente)</p>
             <textarea id="participantes-lote" rows="5" placeholder="Ana Costa&#10;Bruno Lopes"></textarea>
             <button onclick="adicionarParticipantesEmLote()">Adicionar em Lote</button>
+        </section>
+
+        <!-- NOVO: Gerenciar Calendário -->
+        <section>
+            <h2>Gerenciar Calendário de Encontros e Missas</h2>
+            <p><strong>Instrução:</strong> Use o formato <strong>AAAA-MM-DD</strong>. Separe as datas por vírgula ou nova linha.</p>
+
+            <h3>Encontros (Terça)</h3>
+            <p>Documento: <code>calendario/encontros_terca</code></p>
+            <textarea id="datas-terca" rows="3" placeholder="2026-03-03, 2026-03-10"></textarea>
+            <button onclick="salvarDatas('encontros_terca')">Salvar Encontros Terça</button>
+
+            <h3>Encontros (Quarta)</h3>
+            <p>Documento: <code>calendario/encontros_quarta</code></p>
+            <textarea id="datas-quarta" rows="3" placeholder="2026-03-04, 2026-03-11"></textarea>
+            <button onclick="salvarDatas('encontros_quarta')">Salvar Encontros Quarta</button>
+
+            <h3>Encontros (Sábado)</h3>
+            <p>Documento: <code>calendario/encontros_sabado</code></p>
+            <textarea id="datas-sabado" rows="3" placeholder="2026-03-07, 2026-03-14"></textarea>
+            <button onclick="salvarDatas('encontros_sabado')">Salvar Encontros Sábado</button>
+            
+            <hr style="margin: 15px 0;">
+
+            <h3>Datas de Missa</h3>
+            <p>Documento: <code>calendario/missas</code></p>
+            <textarea id="datas-missas" rows="3" placeholder="2026-03-01, 2026-03-08 (Datas de missa obrigatória)"></textarea>
+            <button onclick="salvarDatas('missas')">Salvar Datas de Missa</button>
         </section>
         
         <section>
@@ -103,18 +137,15 @@
         <h1 id="titulo-turma">Registro de Presença</h1>
         <p id="turma-info" style="font-size: 1.2em; font-weight: bold;"></p>
         
-        <section id="registro-presenca">
-            <h2>Marcar Presença</h2>
-            <select id="participante-select">
-                <option value="">Carregando Participantes...</option>
-            </select>
-            <button onclick="registrarPresenca('encontro')">Registrar Presença no Encontro</button>
-            <button onclick="registrarPresenca('missa')" style="background-color: #28a745;">Registrar Presença na Missa</button>
-        </section>
-        
         <section>
-            <h2>Presenças Registradas (Últimos 10 Encontros/Missas)</h2>
-            <ul id="presencas-list"></ul>
+            <h2>Matriz de Presença</h2>
+            <div id="matriz-presenca-status" style="margin-bottom: 10px;"></div>
+            <div class="matriz-container">
+                <table id="matriz-tabela" class="matriz-presenca">
+                    <thead></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
         </section>
     </div>
 
@@ -137,6 +168,26 @@
             messagingSenderId: "420948905617",
             appId: "1:420948905617:web:b08e29cf5073ff804f930"
         };
+        
+        // Mapeamento dos dias da semana e tipos de encontro para o calendário
+        const CALENDARIO_MAP = {
+            'terca': 'encontros_terca',
+            'quarta': 'encontros_quarta',
+            'sabado': 'encontros_sabado',
+            'missa': 'missas'
+        };
+
+        // Opções de Status de Presença e Cores (Item 3)
+        const STATUS_OPTIONS = [
+            { value: 'F', text: 'F (Falta)', class: 'F' },
+            { value: 'P', text: 'P (Presença)', class: 'P' },
+            { value: 'FJ', text: 'FJ (Justificada)', class: 'FJ' },
+        ];
+        const STATUS_OPTIONS_ENCONTRO = [ 
+            ...STATUS_OPTIONS,
+            { value: 'FR', text: 'FR (Reposta)', class: 'FR' } // FR apenas para encontros
+        ];
+
 
         // Variáveis de escopo
         let app;
@@ -148,7 +199,7 @@
         const chaveSecreta = urlParams.get('key');
         
         const statusMessageDiv = document.getElementById('status-message');
-        statusMessageDiv.style.display = 'block'; // Mostra a div de status
+        statusMessageDiv.style.display = 'block'; 
 
         // 1. Tenta inicializar o Firebase
         try {
@@ -161,7 +212,6 @@
         } catch (error) {
             statusMessageDiv.innerHTML = `ERRO CRÍTICO DE INICIALIZAÇÃO DO FIREBASE. Detalhe: ${error.message}.`;
             console.error("ERRO CRÍTICO DE INICIALIZAÇÃO DO FIREBASE:", error);
-            // Se falhar, impede o carregamento da interface principal.
             window.onload = function() {}; 
         }
 
@@ -177,6 +227,7 @@
                 document.getElementById('admin-panel').style.display = 'block';
                 document.getElementById('catequista-page').style.display = 'none';
                 carregarTurmas(); 
+                carregarDatasCalendario(); // NOVO: Carregar dados do calendário
                 
                 // Adicionar Listeners de Formulário Admin
                 document.getElementById('form-turma').addEventListener('submit', (e) => {
@@ -191,19 +242,16 @@
         };
 
         // =========================================================================
-        //                  FUNÇÕES MODO CATEQUISTA (Registro de Presença)
+        //                  FUNÇÕES MODO CATEQUISTA (Registro de Presença em Matriz)
         // =========================================================================
 
         /**
-         * Valida a chave secreta da URL contra a chave no Firestore antes de carregar a turma.
-         * @param {string} turmaId ID da turma.
-         * @param {string} chaveSecreta Chave de acesso.
+         * Valida a chave secreta e inicia o carregamento da matriz de presença.
          */
         async function validarChaveEIniciar(turmaId, chaveSecreta) {
             try {
-                // CORREÇÃO: Usando doc() modular
                 const turmaRef = doc(db, "turmas", turmaId);
-                const turmaDoc = await getDoc(turmaRef); // Usando getDoc() modular
+                const turmaDoc = await getDoc(turmaRef); 
 
                 if (!turmaDoc.exists) {
                      document.getElementById('catequista-page').innerHTML = "<h1>Erro: Turma Inexistente.</h1>";
@@ -215,12 +263,18 @@
                      document.getElementById('catequista-page').innerHTML = "<h1>Erro: Chave de Acesso Inválida.</h1>";
                      return;
                 }
+                if (!data.dia_semana || !CALENDARIO_MAP[data.dia_semana]) {
+                    document.getElementById('catequista-page').innerHTML = "<h1>Erro de Configuração: Esta turma não tem um Dia de Semana (terca, quarta, sabado) configurado no Painel Admin.</h1>";
+                    return;
+                }
 
                 // Se a chave for válida, carrega a interface
-                document.getElementById('turma-info').innerHTML = `Turma: ${data.nome} | Catequista: ${data.catequista}`;
-                carregarParticipantes(turmaId);
-                visualizarPresencas(turmaId);
-                document.getElementById('status-message').style.display = 'none'; // Esconde o status após carregar
+                document.getElementById('turma-info').innerHTML = `Turma: ${data.nome} | Catequista: ${data.catequista} | Dia: ${data.dia_semana.toUpperCase()}`;
+                
+                // NOVO: Carregar a Matriz de Presença
+                carregarMatrizPresenca(turmaId, data.dia_semana);
+                document.getElementById('status-message').style.display = 'none'; 
+
             } catch (error) {
                 console.error("Erro na validação da chave ou comunicação:", error);
                 document.getElementById('catequista-page').innerHTML = `<h1>Erro: Falha ao carregar dados. Detalhes: ${error.message}</h1>`;
@@ -229,113 +283,242 @@
         }
 
         /**
-         * Carrega a lista de participantes da turma para o select.
-         * @param {string} turmaId ID da turma.
+         * Carrega a Matriz de Presença: Participantes vs Datas (Encontros + Missas).
          */
-        function carregarParticipantes(turmaId) {
-            // CORREÇÃO: Usando query() e collection() modulares, e getDocs()
-            const participantesQuery = query(collection(db, "participantes"), where("turma_id", "==", turmaId));
-            
-            getDocs(participantesQuery)
-                .then((querySnapshot) => {
-                    const select = document.getElementById('participante-select');
-                    select.innerHTML = '<option value="">Selecione o Catequizando</option>'; // Limpa e adiciona opção padrão
-                    querySnapshot.forEach((doc) => {
-                        const participante = doc.data();
-                        const option = document.createElement('option');
-                        option.value = doc.id;
-                        option.textContent = participante.nome;
-                        select.appendChild(option);
+        async function carregarMatrizPresenca(turmaId, diaSemanaTurma) {
+            const statusDiv = document.getElementById('matriz-presenca-status');
+            statusDiv.innerHTML = 'Carregando matriz...';
+
+            try {
+                // 1. Obter Participantes da Turma
+                const participantesQuery = query(collection(db, "participantes"), where("turma_id", "==", turmaId));
+                const participantesSnapshot = await getDocs(participantesQuery);
+                const participantes = {};
+                participantesSnapshot.forEach(doc => {
+                    participantes[doc.id] = { nome: doc.data().nome, presencas: {} }; // Inicializa presenças como objeto
+                });
+
+                // 2. Obter Datas de Encontro e Missa
+                const encontroDocId = CALENDARIO_MAP[diaSemanaTurma];
+                const missaDocId = CALENDARIO_MAP['missa'];
+                
+                const encontroDoc = await getDoc(doc(db, "calendario", encontroDocId));
+                const missaDoc = await getDoc(doc(db, "calendario", missaDocId));
+
+                const datasEncontros = encontroDoc.exists ? encontroDoc.data().datas : [];
+                const datasMissas = missaDoc.exists ? missaDoc.data().datas : [];
+                
+                // Combina e classifica as datas
+                const todasDatas = [
+                    ...datasEncontros.map(d => ({ data: d, tipo: 'encontro' })), 
+                    ...datasMissas.map(d => ({ data: d, tipo: 'missa' }))
+                ].sort((a, b) => new Date(a.data) - new Date(b.data));
+
+                // 3. Obter Registros de Presença Atuais (em tempo real)
+                const presencasQuery = query(collection(db, "presencas"), where("turma_id", "==", turmaId));
+                
+                onSnapshot(presencasQuery, (snapshot) => {
+                    // Mapeia os registros de presença (participante_id -> data_str -> status)
+                    const presencasMap = {};
+                    snapshot.forEach(doc => {
+                        const reg = doc.data();
+                        const key = `${reg.participante_id}_${reg.data_str}`; // Chave única
+                        presencasMap[key] = { status: reg.status, docId: doc.id };
                     });
-                })
-                .catch(error => console.error("Erro ao carregar participantes:", error));
+
+                    renderizarMatriz(participantes, todasDatas, presencasMap);
+                }, (error) => {
+                    console.error("Erro no listener de presenças:", error);
+                    statusDiv.innerHTML = 'Erro ao carregar dados de presença.';
+                });
+
+            } catch (error) {
+                console.error("Erro ao carregar matriz:", error);
+                statusDiv.innerHTML = `Falha ao carregar matriz: ${error.message}`;
+            }
         }
 
         /**
-         * Registra a presença (Encontro ou Missa) no Firestore.
-         * Inclui a chave secreta para validação via Firestore Rules (sem Auth).
-         * @param {string} tipo 'encontro' ou 'missa'.
+         * Renderiza a tabela de matriz interativa.
          */
-        function registrarPresenca(tipo) {
-            const participanteId = document.getElementById('participante-select').value;
+        function renderizarMatriz(participantes, todasDatas, presencasMap) {
+            const table = document.getElementById('matriz-tabela');
+            const thead = table.querySelector('thead');
+            const tbody = table.querySelector('tbody');
             
-            if (!participanteId) {
-                alert("Selecione um catequizando para registrar a presença.");
+            thead.innerHTML = '';
+            tbody.innerHTML = '';
+            
+            // Verifica se há participantes e datas
+            const participanteIds = Object.keys(participantes);
+            if (participanteIds.length === 0) {
+                document.getElementById('matriz-presenca-status').innerHTML = 'Nenhum catequizando cadastrado nesta turma.';
                 return;
             }
+            if (todasDatas.length === 0) {
+                document.getElementById('matriz-presenca-status').innerHTML = 'Nenhuma data de encontro ou missa cadastrada para esta turma.';
+                return;
+            }
+            
+            document.getElementById('matriz-presenca-status').innerHTML = 'Tabela carregada. Clique nas células para alterar.';
 
-            // CORREÇÃO: Usando addDoc() modular
-            addDoc(collection(db, "presencas"), {
-                participante_id: participanteId,
-                turma_id: turmaId,
-                tipo: tipo,
-                data: serverTimestamp(),
-                chave_secreta: chaveSecreta // ESSENCIAL para a regra de segurança do Firestore
-            })
-            .then(() => {
-                alert(`Presença (${tipo}) registrada com sucesso!`);
-                visualizarPresencas(turmaId); // Atualiza a lista
-            })
-            .catch(error => console.error("Erro ao registrar presença:", error));
-        }
 
-        /**
-         * Visualiza os últimos 10 registros de presença.
-         * @param {string} turmaId ID da turma.
-         */
-        function visualizarPresencas(turmaId) {
-            const list = document.getElementById('presencas-list');
-            list.innerHTML = '<li>Carregando registros...</li>'; 
+            // 1. Construir Cabeçalho (Datas)
+            const headerRow = thead.insertRow();
+            headerRow.insertCell().textContent = 'Catequizando'; // Primeira célula vazia
+            
+            todasDatas.forEach(item => {
+                const th = document.createElement('th');
+                const label = item.tipo === 'encontro' ? 'EN' : 'MS';
+                th.innerHTML = `${label}<br>${item.data.substring(5)}`; // Mês-Dia
+                headerRow.appendChild(th);
+            });
 
-            // CORREÇÃO: Usando query() modular e onSnapshot() com a query
-            const presencasQuery = query(
-                collection(db, "presencas"),
-                where("turma_id", "==", turmaId),
-                orderBy("data", "desc"),
-                limit(10)
-            );
+            // 2. Construir Corpo (Participantes)
+            participanteIds.forEach(participanteId => {
+                const row = tbody.insertRow();
+                row.insertCell().textContent = participantes[participanteId].nome;
 
-            // O uso de onSnapshot mantém a lista atualizada em tempo real
-            onSnapshot(presencasQuery, async (snapshot) => {
-                list.innerHTML = '';
-                const presencaDocs = snapshot.docs;
+                todasDatas.forEach(item => {
+                    const cell = row.insertCell();
+                    const dateStr = item.data;
+                    const key = `${participanteId}_${dateStr}`;
+                    const registroAtual = presencasMap[key] || { status: 'F', docId: null }; // Default é Falta
+                    const isEncontro = item.tipo === 'encontro';
 
-                if (presencaDocs.length === 0) {
-                    list.innerHTML = '<li>Nenhuma presença registrada ainda.</li>';
-                    return;
-                }
+                    // Cria o elemento Select
+                    const select = document.createElement('select');
+                    select.className = registroAtual.status; // Adiciona a classe inicial para cor
+                    select.dataset.participanteId = participanteId;
+                    select.dataset.dateStr = dateStr;
+                    select.dataset.tipo = item.tipo;
+                    select.dataset.docId = registroAtual.docId || ''; // Se existir, armazena o docId
 
-                for (const docSnapshot of presencaDocs) { // Renomeado para docSnapshot
-                    const registro = docSnapshot.data();
-                    const item = document.createElement('li');
+                    // Define as opções (com ou sem 'FR')
+                    const options = isEncontro ? STATUS_OPTIONS_ENCONTRO : STATUS_OPTIONS;
                     
-                    // CORREÇÃO: Usando doc() e getDoc() modulares
-                    const pDoc = await getDoc(doc(db, "participantes", registro.participante_id));
-                    const nome = pDoc.data() ? pDoc.data().nome : "Participante Desconhecido";
+                    options.forEach(opt => {
+                        const option = document.createElement('option');
+                        option.value = opt.value;
+                        option.textContent = opt.value;
+                        option.className = opt.class; // Adiciona classe na option (embora o select controle melhor a cor)
+                        if (opt.value === registroAtual.status) {
+                            option.selected = true;
+                        }
+                        select.appendChild(option);
+                    });
                     
-                    const dataObj = registro.data ? new Date(registro.data.toDate()) : new Date();
-                    const dataFormatada = dataObj.toLocaleDateString('pt-BR', { dateStyle: 'short' }) + ' ' + 
-                                          dataObj.toLocaleTimeString('pt-BR', { timeStyle: 'short' });
-                    
-                    item.textContent = `${dataFormatada} - ${nome} (${registro.tipo.toUpperCase()})`;
-                    list.appendChild(item);
-                }
-            }, error => {
-                console.error("Erro no listener de presenças:", error);
-                list.innerHTML = '<li>Erro ao carregar registros.</li>';
+                    // Adiciona o listener de mudança
+                    select.onchange = (e) => {
+                        const novoStatus = e.target.value;
+                        const target = e.target;
+                        
+                        // Atualiza a cor imediatamente
+                        target.className = novoStatus;
+                        
+                        // Salva no Firestore
+                        salvarStatusPresenca(
+                            target.dataset.participanteId, 
+                            target.dataset.dateStr, 
+                            target.dataset.tipo,
+                            novoStatus,
+                            target.dataset.docId
+                        );
+                    };
+
+                    cell.appendChild(select);
+                });
             });
         }
+        
+        /**
+         * Salva o status de presença no Firestore (Cria/Atualiza o registro).
+         * @param {string} participanteId 
+         * @param {string} dateStr Data no formato AAAA-MM-DD
+         * @param {string} tipo 'encontro' ou 'missa'
+         * @param {string} status Novo status (P, F, FJ, FR)
+         * @param {string} docId ID do documento existente (opcional)
+         */
+        function salvarStatusPresenca(participanteId, dateStr, tipo, status, docId) {
+            const dataToSave = {
+                participante_id: participanteId,
+                turma_id: turmaId,
+                data_str: dateStr, // Guarda a data como string para fácil consulta
+                tipo: tipo,
+                status: status,
+                data_registro: serverTimestamp(), // Carimbo de data/hora do momento do registro
+                chave_secreta: chaveSecreta // Para regras de segurança
+            };
+
+            if (docId) {
+                // Se já existe, atualiza
+                const docRef = doc(db, "presencas", docId);
+                updateDoc(docRef, dataToSave)
+                    .then(() => console.log(`Atualizado ${participanteId} em ${dateStr} para ${status}`))
+                    .catch(error => alert(`Erro ao atualizar presença: ${error.message}`));
+            } else {
+                // Se não existe, cria (e a matriz será atualizada pelo onSnapshot, pegando o novo docId)
+                addDoc(collection(db, "presencas"), dataToSave)
+                    .then((newDocRef) => console.log(`Criado ${newDocRef.id} para ${participanteId} em ${dateStr}`))
+                    .catch(error => alert(`Erro ao registrar presença: ${error.message}`));
+            }
+        }
+
 
         // =========================================================================
-        //                  FUNÇÕES MODO ADMINISTRADOR (CRUD e Relatórios)
+        //                  FUNÇÕES MODO ADMINISTRADOR (CRUD, Calendário e Relatórios)
         // =========================================================================
+        
+        /**
+         * NOVO: Carrega as datas de encontros e missas para os textareas.
+         */
+        async function carregarDatasCalendario() {
+            const dias = ['encontros_terca', 'encontros_quarta', 'encontros_sabado', 'missas'];
+            try {
+                for (const dia of dias) {
+                    const docRef = doc(db, "calendario", dia);
+                    const docSnap = await getDoc(docRef);
+                    if (docSnap.exists()) {
+                        const datas = docSnap.data().datas || [];
+                        const elementId = dia.replace('_', '-');
+                        const element = document.getElementById(`datas-${elementId}`);
+                        if (element) {
+                            element.value = datas.join('\n');
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error("Erro ao carregar datas do calendário:", error);
+                alert("Erro ao carregar calendário. Verifique as regras de segurança.");
+            }
+        }
+        
+        /**
+         * NOVO: Salva as datas do calendário no Firestore.
+         */
+        function salvarDatas(docId) {
+            const elementId = docId.replace('_', '-');
+            const element = document.getElementById(`datas-${elementId}`);
+            if (!element) return;
+            
+            // Limpa o texto, remove linhas vazias e duplicações, e garante o formato AAAA-MM-DD
+            const rawDates = element.value.split(/[\n,]/).map(d => d.trim()).filter(d => d.length === 10 && d.includes('-'));
+            const datasUnicas = Array.from(new Set(rawDates)).sort();
+
+            setDoc(doc(db, "calendario", docId), {
+                datas: datasUnicas
+            }, { merge: true })
+            .then(() => {
+                alert(`Datas para ${docId.toUpperCase()} salvas com sucesso!`);
+                element.value = datasUnicas.join('\n'); // Atualiza o textarea com o formato limpo
+            })
+            .catch(error => console.error(`Erro ao salvar datas ${docId}:`, error));
+        }
 
         /**
          * Carrega todas as turmas para as listas e selects do painel administrativo.
          */
         function carregarTurmas() {
-            // NOTA IMPORTANTE: Esta função requer que as Regras de Segurança do Firebase
-            // permitam 'read' na coleção 'turmas' para usuários não autenticados (if true).
             getDocs(collection(db, "turmas")).then((snapshot) => {
                 const listaTurmas = document.getElementById('lista-turmas');
                 const selectParticipante = document.getElementById('turma-selecionada-participante');
@@ -361,10 +544,10 @@
                     selectParticipante.add(optionP);
                     selectRelatorio.add(optionR);
                 });
-                document.getElementById('status-message').style.display = 'none'; // Esconde o status após carregar
+                document.getElementById('status-message').style.display = 'none'; 
             }).catch(error => {
                 console.error("Erro ao carregar turmas:", error);
-                document.getElementById('lista-turmas').innerHTML = '<li><strong>ERRO: Permissão negada!</strong> Por favor, verifique se as suas Regras de Segurança do Firebase permitem "read" na coleção "turmas".</li>';
+                document.getElementById('lista-turmas').innerHTML = '<li><strong>ERRO: Permissão negada!</strong> Por favor, verifique as Regras de Segurança.</li>';
                 document.getElementById('status-message').innerHTML = `ERRO DE PERMISSÃO: ${error.message}. Acesso à gestão de turmas negado.`;
                 document.getElementById('status-message').style.backgroundColor = '#ffcccc';
                 document.getElementById('status-message').style.borderColor = '#cc0000';
@@ -385,21 +568,34 @@
 
         /**
          * Adiciona ou Altera uma Turma individualmente.
+         * NOVO: Adiciona campo 'dia_semana' para vincular ao calendário de encontros.
          */
         function adicionarTurmaIndividual() {
             const id = document.getElementById('turma-id').value.trim();
             const nome = document.getElementById('turma-nome').value.trim();
             const catequista = document.getElementById('turma-catequista').value.trim();
             const chave_secreta = document.getElementById('turma-chave').value.trim();
-
-            // CORREÇÃO: Usando doc() e setDoc() modulares
+            
+            // Determina o dia da semana para vincular ao calendário (simplificação por nome)
+            let dia_semana = '';
+            if (nome.toLowerCase().includes('terça') || nome.toLowerCase().includes('terca')) {
+                dia_semana = 'terca';
+            } else if (nome.toLowerCase().includes('quarta')) {
+                dia_semana = 'quarta';
+            } else if (nome.toLowerCase().includes('sábado') || nome.toLowerCase().includes('sabado')) {
+                dia_semana = 'sabado';
+            } else {
+                 alert("Atenção: A turma não foi vinculada a um dia (terça, quarta, ou sábado) e não aparecerá na matriz. Edite o nome ou implemente um campo 'dia_semana'.");
+            }
+            
             setDoc(doc(db, "turmas", id), {
                 nome: nome,
                 catequista: catequista,
-                chave_secreta: chave_secreta
+                chave_secreta: chave_secreta,
+                dia_semana: dia_semana // Novo campo
             }, { merge: true }) 
             .then(() => {
-                alert(`Turma ${id} adicionada/atualizada! Chave: ${chave_secreta}`);
+                alert(`Turma ${id} adicionada/atualizada! Dia da semana detectado: ${dia_semana.toUpperCase()}`);
                 document.getElementById('form-turma').reset();
                 carregarTurmas();
             })
@@ -414,21 +610,29 @@
             if (!loteTexto) return;
 
             const linhas = loteTexto.split('\n');
-            const batch = writeBatch(db); // Usa writeBatch modular
+            const batch = writeBatch(db); 
 
             linhas.forEach(linha => {
                 const partes = linha.split(',').map(s => s.trim());
                 if (partes.length === 4) {
                     const [id, nome, catequista, chave_secreta] = partes;
-                    // CORREÇÃO: Usando doc() modular
+                    let dia_semana = '';
+                    if (nome.toLowerCase().includes('terça') || nome.toLowerCase().includes('terca')) {
+                        dia_semana = 'terca';
+                    } else if (nome.toLowerCase().includes('quarta')) {
+                        dia_semana = 'quarta';
+                    } else if (nome.toLowerCase().includes('sábado') || nome.toLowerCase().includes('sabado')) {
+                        dia_semana = 'sabado';
+                    }
+                    
                     const turmaRef = doc(db, "turmas", id);
-                    batch.set(turmaRef, { nome, catequista, chave_secreta }, { merge: true });
+                    batch.set(turmaRef, { nome, catequista, chave_secreta, dia_semana }, { merge: true });
                 }
             });
 
             batch.commit()
                 .then(() => {
-                    alert("Turmas em lote adicionadas/atualizadas!");
+                    alert("Turmas em lote adicionadas/atualizadas! Verifique o log para dias não detectados.");
                     document.getElementById('turmas-lote').value = '';
                     carregarTurmas();
                 })
@@ -436,7 +640,7 @@
         }
 
         /**
-         * Adiciona um Catequizando individualmente, com ID gerado automaticamente.
+         * Adiciona um Catequizando individualmente.
          */
         function adicionarParticipanteIndividual() {
             const turmaId = document.getElementById('turma-selecionada-participante').value;
@@ -447,7 +651,6 @@
                 return;
             }
 
-            // Mudar para addDoc para auto-gerar o ID
             addDoc(collection(db, "participantes"), {
                 nome: nome,
                 turma_id: turmaId
@@ -460,7 +663,7 @@
         }
 
         /**
-         * Adiciona Catequizandos em Lote, com IDs gerados automaticamente.
+         * Adiciona Catequizandos em Lote.
          */
         function adicionarParticipantesEmLote() {
             const turmaId = document.getElementById('turma-selecionada-participante').value;
@@ -474,9 +677,8 @@
             const batch = writeBatch(db); 
 
             linhas.forEach(linha => {
-                const nome = linha.trim(); // Apenas o nome é esperado
+                const nome = linha.trim(); 
                 if (nome) {
-                    // Gera um novo ID de documento no lado do cliente
                     const participanteRef = doc(collection(db, "participantes")); 
                     batch.set(participanteRef, { nome, turma_id: turmaId });
                 }
@@ -502,10 +704,18 @@
                 resultadoDiv.innerHTML = 'Selecione uma turma.';
                 return;
             }
-
+            
             try {
-                // 1. Obter participantes da turma
-                // CORREÇÃO: Usando query(), collection() e getDocs() modulares
+                // 1. Obter informações da Turma (para dia da semana)
+                const turmaDoc = await getDoc(doc(db, "turmas", turmaId));
+                if (!turmaDoc.exists || !turmaDoc.data().dia_semana) {
+                    resultadoDiv.innerHTML = 'Erro: Turma não encontrada ou Dia da Semana não configurado.';
+                    return;
+                }
+                const diaSemanaTurma = turmaDoc.data().dia_semana;
+                const encontroDocId = CALENDARIO_MAP[diaSemanaTurma];
+
+                // 2. Obter participantes da turma
                 const participantesQuery = query(collection(db, "participantes"), where("turma_id", "==", turmaId));
                 const participantesSnapshot = await getDocs(participantesQuery);
                 
@@ -514,8 +724,12 @@
                     participantes[doc.id] = { nome: doc.data().nome, presencas: 0, faltas: 0 };
                 });
 
-                // 2. Obter todas as presenças de 'encontro' (para calcular total de encontros e presenças)
-                // CORREÇÃO: Usando query(), collection() e getDocs() modulares
+                // 3. Obter Total de Encontros (Datas)
+                const encontroDoc = await getDoc(doc(db, "calendario", encontroDocId));
+                const datasEncontros = encontroDoc.exists ? encontroDoc.data().datas : [];
+                const totalEncontros = datasEncontros.length;
+                
+                // 4. Obter Registros de Presença (Contando P e FR)
                 const presencasQuery = query(
                     collection(db, "presencas"),
                     where("turma_id", "==", turmaId),
@@ -523,35 +737,29 @@
                 );
                 const presencasSnapshot = await getDocs(presencasQuery);
                 
-                const datasEncontros = new Set();
-                
+                // Mapeia o número de presenças válidas (P ou FR) por participante
+                const presencasContagem = {};
                 presencasSnapshot.forEach(doc => {
                     const data = doc.data();
-                    
-                    // Conta as presenças
-                    if (participantes[data.participante_id]) {
-                        participantes[data.participante_id].presencas++;
+                    if (data.status === 'P' || data.status === 'FR' || data.status === 'FJ') {
+                        // Só contamos P, FR e FJ como presença (FJ é presença justificada, não falta)
+                        presencasContagem[data.participante_id] = (presencasContagem[data.participante_id] || 0) + 1;
                     }
-                    
-                    // Conta as datas únicas de encontros (Total de Encontros)
-                    const dataObj = data.data.toDate();
-                    const dataStr = dataObj.toISOString().split('T')[0];
-                    datasEncontros.add(dataStr);
                 });
 
-                const totalEncontros = datasEncontros.size;
                 
-                // 3. Montar o relatório
-                let relatorioHTML = `<h3>Relatório da Turma ${turmaId}</h3>`;
-                relatorioHTML += `<p>Total de Encontros Registrados: <strong>${totalEncontros}</strong></p>`;
+                // 5. Montar o relatório
+                let relatorioHTML = `<h3>Relatório da Turma ${turmaId} (${diaSemanaTurma.toUpperCase()})</h3>`;
+                relatorioHTML += `<p>Total de Encontros Previstos: <strong>${totalEncontros}</strong></p>`;
                 
-                relatorioHTML += '<table><thead><tr><th>Nome</th><th>Presenças</th><th>Faltas</th></tr></thead><tbody>';
+                relatorioHTML += '<table><thead><tr><th>Nome</th><th>Presenças (P/FR/FJ)</th><th>Faltas (F)</th></tr></thead><tbody>';
 
                 for (const id in participantes) {
                     const p = participantes[id];
-                    const faltas = totalEncontros - p.presencas;
-                    p.faltas = faltas;
-                    relatorioHTML += `<tr><td>${p.nome}</td><td>${p.presencas}</td><td><strong>${p.faltas}</strong></td></tr>`;
+                    const numPresencas = presencasContagem[id] || 0;
+                    const faltas = totalEncontros - numPresencas;
+                    
+                    relatorioHTML += `<tr><td>${p.nome}</td><td>${numPresencas}</td><td><strong>${faltas}</strong></td></tr>`;
                 }
                 
                 relatorioHTML += '</tbody></table>';
