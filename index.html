@@ -60,14 +60,23 @@
                 <input type="text" id="turma-id" placeholder="ID da Turma (Ex: A1)" required>
                 <input type="text" id="turma-nome" placeholder="Nome da Turma" required>
                 <input type="text" id="turma-catequista" placeholder="Nome do Catequista" required>
+                
+                <label for="turma-dia-semana" style="display: block; margin-top: 8px;">Dia da Semana do Encontro:</label>
+                <select id="turma-dia-semana" required style="width: 100%;">
+                    <option value="">Selecione o Dia</option>
+                    <option value="terca">Terça</option>
+                    <option value="quarta">Quarta</option>
+                    <option value="sabado">Sábado</option>
+                </select>
+
                 <!-- Campo para a chave secreta que será usada no link do catequista -->
                 <input type="text" id="turma-chave" placeholder="Chave Secreta (Senha de Accesso da Turma)" required>
                 <button type="submit">Adicionar/Atualizar Turma</button>
             </form>
             
             <h3>Adicionar Turmas em Lote</h3>
-            <p>Formato: ID,Nome,Catequista,ChaveSecreta (uma por linha)</p>
-            <textarea id="turmas-lote" rows="5" placeholder="A1,Eucaristia A,Maria Silva,senha123&#10;B2,Crisma B,João Souza,chave456"></textarea>
+            <p>Formato: ID,Nome,Catequista,ChaveSecreta,DiaDaSemana (uma por linha)</p>
+            <textarea id="turmas-lote" rows="5" placeholder="A1,Eucaristia A,Maria Silva,senha123,terca&#10;B2,Crisma B,João Souza,chave456,sabado"></textarea>
             <button onclick="adicionarTurmasEmLote()">Adicionar em Lote</button>
             
             <h3>Turmas Existentes (Clique para Editar)</h3>
@@ -92,31 +101,63 @@
             <button onclick="adicionarParticipantesEmLote()">Adicionar em Lote</button>
         </section>
 
-        <!-- NOVO: Gerenciar Calendário -->
+        <!-- Gerenciar Calendário -->
         <section>
             <h2>Gerenciar Calendário de Encontros e Missas</h2>
-            <p><strong>Instrução:</strong> Use o formato <strong>AAAA-MM-DD</strong>. Separe as datas por vírgula ou nova linha.</p>
+            
+            <!-- NOVO: Gerador de Período -->
+            <div style="border: 1px dashed #007bff; padding: 15px; border-radius: 4px; margin-bottom: 20px;">
+                <h3>Geração de Datas por Período</h3>
+                <p>Preencha as datas (AAAA-MM-DD) para gerar e salvar um lote de datas automaticamente.</p>
+                
+                <input type="text" id="range-start-date" placeholder="Data de Início (AAAA-MM-DD)" style="width: 49%; display: inline-block;">
+                <input type="text" id="range-end-date" placeholder="Data Final (AAAA-MM-DD)" style="width: 49%; display: inline-block;">
+                
+                <label for="range-target-day" style="display: block; margin-top: 8px;">Dia da Semana a ser Gerado:</label>
+                <select id="range-target-day" style="width: 100%;">
+                    <option value="">(Selecione o Dia)</option>
+                    <option value="6">Sábado</option>
+                    <option value="2">Terça</option>
+                    <option value="3">Quarta</option>
+                    <option value="all">Missas (Todos os dias)</option>
+                </select>
+                
+                <label for="range-target-doc" style="display: block; margin-top: 8px;">Documento de Destino (Obrigatório):</label>
+                <select id="range-target-doc" style="width: 100%;">
+                    <option value="">(Selecione o Destino)</option>
+                    <option value="encontros_terca">Encontros Terça</option>
+                    <option value="encontros_quarta">Encontros Quarta</option>
+                    <option value="encontros_sabado">Encontros Sábado</option>
+                    <option value="missas">Datas de Missa</option>
+                </select>
+
+                <button onclick="salvarRangeDatas()">Gerar Datas e SALVAR no Firestore</button>
+                <p id="range-status" style="margin-top: 10px; font-size: 0.9em;"></p>
+            </div>
+
+
+            <p><strong>Instrução:</strong> Edite o campo abaixo apenas para inclusões manuais ou remoção de recessos.</p>
 
             <h3>Encontros (Terça)</h3>
             <p>Documento: <code>calendario/encontros_terca</code></p>
-            <textarea id="datas-terca" rows="3" placeholder="2026-03-03, 2026-03-10"></textarea>
+            <textarea id="datas-terca" rows="3" placeholder="2026-03-03&#10;2026-03-10"></textarea>
             <button onclick="salvarDatas('encontros_terca')">Salvar Encontros Terça</button>
 
             <h3>Encontros (Quarta)</h3>
             <p>Documento: <code>calendario/encontros_quarta</code></p>
-            <textarea id="datas-quarta" rows="3" placeholder="2026-03-04, 2026-03-11"></textarea>
+            <textarea id="datas-quarta" rows="3" placeholder="2026-03-04&#10;2026-03-11"></textarea>
             <button onclick="salvarDatas('encontros_quarta')">Salvar Encontros Quarta</button>
 
             <h3>Encontros (Sábado)</h3>
             <p>Documento: <code>calendario/encontros_sabado</code></p>
-            <textarea id="datas-sabado" rows="3" placeholder="2026-03-07, 2026-03-14"></textarea>
+            <textarea id="datas-sabado" rows="3" placeholder="2026-03-07&#10;2026-03-14"></textarea>
             <button onclick="salvarDatas('encontros_sabado')">Salvar Encontros Sábado</button>
             
             <hr style="margin: 15px 0;">
 
             <h3>Datas de Missa</h3>
             <p>Documento: <code>calendario/missas</code></p>
-            <textarea id="datas-missas" rows="3" placeholder="2026-03-01, 2026-03-08 (Datas de missa obrigatória)"></textarea>
+            <textarea id="datas-missas" rows="3" placeholder="2026-03-01&#10;2026-03-08 (Datas de missa obrigatória)"></textarea>
             <button onclick="salvarDatas('missas')">Salvar Datas de Missa</button>
         </section>
         
@@ -177,7 +218,7 @@
             'missa': 'missas'
         };
 
-        // Opções de Status de Presença e Cores (Item 3)
+        // Opções de Status de Presença e Cores
         const STATUS_OPTIONS = [
             { value: 'F', text: 'F (Falta)', class: 'F' },
             { value: 'P', text: 'P (Presença)', class: 'P' },
@@ -227,7 +268,7 @@
                 document.getElementById('admin-panel').style.display = 'block';
                 document.getElementById('catequista-page').style.display = 'none';
                 carregarTurmas(); 
-                carregarDatasCalendario(); // NOVO: Carregar dados do calendário
+                carregarDatasCalendario(); // Carregar dados do calendário
                 
                 // Adicionar Listeners de Formulário Admin
                 document.getElementById('form-turma').addEventListener('submit', (e) => {
@@ -271,7 +312,7 @@
                 // Se a chave for válida, carrega a interface
                 document.getElementById('turma-info').innerHTML = `Turma: ${data.nome} | Catequista: ${data.catequista} | Dia: ${data.dia_semana.toUpperCase()}`;
                 
-                // NOVO: Carregar a Matriz de Presença
+                // Carregar a Matriz de Presença
                 carregarMatrizPresenca(turmaId, data.dia_semana);
                 document.getElementById('status-message').style.display = 'none'; 
 
@@ -470,7 +511,113 @@
         // =========================================================================
         
         /**
-         * NOVO: Carrega as datas de encontros e missas para os textareas.
+         * Gera um array de datas AAAA-MM-DD dentro de um intervalo, filtrando por dia da semana.
+         * @param {string} startStr Data inicial (AAAA-MM-DD).
+         * @param {string} endStr Data final (AAAA-MM-DD).
+         * @param {number|string} targetDay Dia da semana (2=Ter, 3=Qua, 6=Sab) ou 'all'.
+         * @returns {string[]} Array de datas no formato AAAA-MM-DD.
+         */
+        function generateDatesInRange(startStr, endStr, targetDay) {
+            const dates = [];
+            // Adiciona T00:00:00 para evitar problemas de fuso horário
+            let start = new Date(startStr + 'T00:00:00');
+            let end = new Date(endStr + 'T00:00:00');
+            
+            if (isNaN(start.getTime()) || isNaN(end.getTime()) || start > end) {
+                throw new Error("Formato de data inválido ou data inicial é posterior à final. Use AAAA-MM-DD.");
+            }
+
+            const targetDayNum = parseInt(targetDay);
+            const isAll = targetDay === 'all';
+            
+            let currentDate = new Date(start);
+            
+            // Avança para o primeiro dia de interesse (se não for 'all')
+            if (!isAll && currentDate.getDay() !== targetDayNum) {
+                while (currentDate.getDay() !== targetDayNum && currentDate <= end) {
+                    currentDate.setDate(currentDate.getDate() + 1);
+                }
+            }
+
+            // Itera e coleta as datas
+            while (currentDate.getTime() <= end.getTime()) {
+                if (isAll || currentDate.getDay() === targetDayNum) {
+                    dates.push(currentDate.toISOString().split('T')[0]);
+                }
+                
+                // Se não for 'all', pula 7 dias (próximo dia da semana), senão, pula 1 dia
+                if (!isAll) {
+                    currentDate.setDate(currentDate.getDate() + 7);
+                } else {
+                     currentDate.setDate(currentDate.getDate() + 1);
+                }
+            }
+            
+            return dates;
+        }
+
+        /**
+         * Lógica para salvar datas geradas por um intervalo.
+         */
+        async function salvarRangeDatas() {
+            const startStr = document.getElementById('range-start-date').value.trim();
+            const endStr = document.getElementById('range-end-date').value.trim();
+            const targetDay = document.getElementById('range-target-day').value;
+            const docId = document.getElementById('range-target-doc').value;
+            const statusDiv = document.getElementById('range-status');
+            statusDiv.textContent = '';
+            statusDiv.style.color = '#333';
+
+            if (!startStr || !endStr || !targetDay || !docId) {
+                statusDiv.textContent = "Por favor, preencha a Data de Início, Data Final, Dia da Semana e o Documento de Destino.";
+                statusDiv.style.color = '#cc0000';
+                return;
+            }
+            
+            // Verifica formato AAAA-MM-DD
+            if (!/^\d{4}-\d{2}-\d{2}$/.test(startStr) || !/^\d{4}-\d{2}-\d{2}$/.test(endStr)) {
+                statusDiv.textContent = "O formato de data deve ser AAAA-MM-DD. Ex: 2026-03-03";
+                statusDiv.style.color = '#cc0000';
+                return;
+            }
+
+            try {
+                let generatedDates;
+                
+                // O valor do select agora corresponde ao índice do dia da semana em JS (0=Dom, 1=Seg, 2=Ter...)
+                let jsDay;
+                if (targetDay === 'all') {
+                    jsDay = 'all';
+                } else {
+                    jsDay = parseInt(targetDay);
+                }
+                
+                generatedDates = generateDatesInRange(startStr, endStr, jsDay);
+                
+                if (generatedDates.length === 0) {
+                    statusDiv.textContent = "Nenhuma data encontrada no intervalo para o dia da semana selecionado.";
+                    statusDiv.style.color = '#cc0000';
+                    return;
+                }
+                
+                // Salva no Firestore
+                await setDoc(doc(db, "calendario", docId), {
+                    datas: generatedDates
+                }, { merge: true });
+
+                statusDiv.textContent = `Sucesso! ${generatedDates.length} datas geradas e salvas em ${docId}.`;
+                statusDiv.style.color = '#006600';
+                carregarDatasCalendario(); // Recarrega os textareas de visualização
+
+            } catch (error) {
+                console.error("Erro na geração ou salvamento do intervalo:", error);
+                statusDiv.textContent = `Erro: ${error.message}`;
+                statusDiv.style.color = '#cc0000';
+            }
+        }
+        
+        /**
+         * Carrega as datas de encontros e missas para os textareas.
          */
         async function carregarDatasCalendario() {
             const dias = ['encontros_terca', 'encontros_quarta', 'encontros_sabado', 'missas'];
@@ -489,12 +636,13 @@
                 }
             } catch (error) {
                 console.error("Erro ao carregar datas do calendário:", error);
-                alert("Erro ao carregar calendário. Verifique as regras de segurança.");
+                // Não é um erro crítico, mas alertamos o admin
+                // alert("Erro ao carregar calendário. Verifique as regras de segurança.");
             }
         }
         
         /**
-         * NOVO: Salva as datas do calendário no Firestore.
+         * Salva as datas do calendário no Firestore (edição manual).
          */
         function salvarDatas(docId) {
             const elementId = docId.replace('_', '-');
@@ -502,7 +650,7 @@
             if (!element) return;
             
             // Limpa o texto, remove linhas vazias e duplicações, e garante o formato AAAA-MM-DD
-            const rawDates = element.value.split(/[\n,]/).map(d => d.trim()).filter(d => d.length === 10 && d.includes('-'));
+            const rawDates = element.value.split('\n').map(d => d.trim()).filter(d => d.length === 10 && d.includes('-'));
             const datasUnicas = Array.from(new Set(rawDates)).sort();
 
             setDoc(doc(db, "calendario", docId), {
@@ -534,7 +682,8 @@
                     
                     // Lista para edição
                     const li = document.createElement('li');
-                    li.textContent = `${id}: ${data.nome} - Catequista: ${data.catequista} (Chave: ${data.chave_secreta})`;
+                    const diaText = data.dia_semana ? ` (${data.dia_semana.toUpperCase()})` : '';
+                    li.textContent = `${id}: ${data.nome} - Catequista: ${data.catequista}${diaText} (Chave: ${data.chave_secreta})`;
                     li.onclick = () => preencherFormularioTurma(id, data); 
                     listaTurmas.appendChild(li);
 
@@ -564,38 +713,32 @@
             document.getElementById('turma-nome').value = data.nome;
             document.getElementById('turma-catequista').value = data.catequista;
             document.getElementById('turma-chave').value = data.chave_secreta;
+            document.getElementById('turma-dia-semana').value = data.dia_semana || ''; // Novo campo
         }
 
         /**
          * Adiciona ou Altera uma Turma individualmente.
-         * NOVO: Adiciona campo 'dia_semana' para vincular ao calendário de encontros.
          */
         function adicionarTurmaIndividual() {
             const id = document.getElementById('turma-id').value.trim();
             const nome = document.getElementById('turma-nome').value.trim();
             const catequista = document.getElementById('turma-catequista').value.trim();
             const chave_secreta = document.getElementById('turma-chave').value.trim();
-            
-            // Determina o dia da semana para vincular ao calendário (simplificação por nome)
-            let dia_semana = '';
-            if (nome.toLowerCase().includes('terça') || nome.toLowerCase().includes('terca')) {
-                dia_semana = 'terca';
-            } else if (nome.toLowerCase().includes('quarta')) {
-                dia_semana = 'quarta';
-            } else if (nome.toLowerCase().includes('sábado') || nome.toLowerCase().includes('sabado')) {
-                dia_semana = 'sabado';
-            } else {
-                 alert("Atenção: A turma não foi vinculada a um dia (terça, quarta, ou sábado) e não aparecerá na matriz. Edite o nome ou implemente um campo 'dia_semana'.");
+            const dia_semana = document.getElementById('turma-dia-semana').value; // NOVO: Pega o valor do select
+
+            if (!dia_semana) {
+                 alert("Por favor, selecione o Dia da Semana para vincular o calendário de encontros.");
+                 return;
             }
             
             setDoc(doc(db, "turmas", id), {
                 nome: nome,
                 catequista: catequista,
                 chave_secreta: chave_secreta,
-                dia_semana: dia_semana // Novo campo
+                dia_semana: dia_semana
             }, { merge: true }) 
             .then(() => {
-                alert(`Turma ${id} adicionada/atualizada! Dia da semana detectado: ${dia_semana.toUpperCase()}`);
+                alert(`Turma ${id} adicionada/atualizada! Dia da semana: ${dia_semana.toUpperCase()}`);
                 document.getElementById('form-turma').reset();
                 carregarTurmas();
             })
@@ -609,34 +752,49 @@
             const loteTexto = document.getElementById('turmas-lote').value.trim();
             if (!loteTexto) return;
 
-            const linhas = loteTexto.split('\n');
+            const linhas = loteTexto.split('\n').filter(line => line.trim() !== ''); // Garante que linhas vazias sejam ignoradas
             const batch = writeBatch(db); 
+            let successCount = 0;
+            let errorLines = [];
 
-            linhas.forEach(linha => {
+            linhas.forEach((linha, index) => {
+                // Divide por vírgula e remove espaços em branco extras
                 const partes = linha.split(',').map(s => s.trim());
-                if (partes.length === 4) {
-                    const [id, nome, catequista, chave_secreta] = partes;
-                    let dia_semana = '';
-                    if (nome.toLowerCase().includes('terça') || nome.toLowerCase().includes('terca')) {
-                        dia_semana = 'terca';
-                    } else if (nome.toLowerCase().includes('quarta')) {
-                        dia_semana = 'quarta';
-                    } else if (nome.toLowerCase().includes('sábado') || nome.toLowerCase().includes('sabado')) {
-                        dia_semana = 'sabado';
+                
+                // Formato esperado: ID, Nome, Catequista, ChaveSecreta, DiaDaSemana
+                if (partes.length === 5) {
+                    const [id, nome, catequista, chave_secreta, dia_semana] = partes;
+                    
+                    if (!id || !nome || !chave_secreta || !dia_semana || !['terca', 'quarta', 'sabado'].includes(dia_semana.toLowerCase())) {
+                        errorLines.push(`Linha ${index + 1}: Dados inválidos ou Dia da Semana incorreto.`);
+                        return;
                     }
                     
                     const turmaRef = doc(db, "turmas", id);
-                    batch.set(turmaRef, { nome, catequista, chave_secreta, dia_semana }, { merge: true });
+                    batch.set(turmaRef, { nome, catequista, chave_secreta, dia_semana: dia_semana.toLowerCase() }, { merge: true });
+                    successCount++;
+                } else {
+                    errorLines.push(`Linha ${index + 1}: Esperado 5 campos, encontrado ${partes.length}.`);
                 }
             });
 
+            if (successCount === 0) {
+                 alert(`Nenhuma turma adicionada. Verifique o formato do lote. ${errorLines.join(' | ')}`);
+                 return;
+            }
+
             batch.commit()
                 .then(() => {
-                    alert("Turmas em lote adicionadas/atualizadas! Verifique o log para dias não detectados.");
+                    let message = `Lote processado. ${successCount} turmas adicionadas/atualizadas com sucesso.`;
+                    if (errorLines.length > 0) {
+                        message += ` ${errorLines.length} linhas com erro (ver console para detalhes).`;
+                        console.error("Erros no Lote de Turmas:", errorLines);
+                    }
+                    alert(message);
                     document.getElementById('turmas-lote').value = '';
                     carregarTurmas();
                 })
-                .catch(error => console.error("Erro ao adicionar turmas em lote:", error));
+                .catch(error => console.error("Erro ao submeter o lote de turmas ao Firestore:", error));
         }
 
         /**
@@ -673,7 +831,7 @@
                 return;
             }
 
-            const linhas = loteTexto.split('\n');
+            const linhas = loteTexto.split('\n').filter(line => line.trim() !== '');
             const batch = writeBatch(db); 
 
             linhas.forEach(linha => {
@@ -737,12 +895,12 @@
                 );
                 const presencasSnapshot = await getDocs(presencasQuery);
                 
-                // Mapeia o número de presenças válidas (P ou FR) por participante
+                // Mapeia o número de presenças válidas (P, FR, FJ) por participante
                 const presencasContagem = {};
                 presencasSnapshot.forEach(doc => {
                     const data = doc.data();
                     if (data.status === 'P' || data.status === 'FR' || data.status === 'FJ') {
-                        // Só contamos P, FR e FJ como presença (FJ é presença justificada, não falta)
+                        // Contamos P, FR e FJ como presença válida
                         presencasContagem[data.participante_id] = (presencasContagem[data.participante_id] || 0) + 1;
                     }
                 });
