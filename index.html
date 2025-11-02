@@ -576,7 +576,7 @@
             
             // Verifica formato AAAA-MM-DD
             if (!/^\d{4}-\d{2}-\d{2}$/.test(startStr) || !/^\d{4}-\d{2}-\d{2}$/.test(endStr)) {
-                statusDiv.textContent = "O formato de data deve ser AAAA-MM-DD. Ex: 2026-03-03";
+                statusDiv.textContent = "O formato de data DEVE ser AAAA-MM-DD. Exemplo correto: 2026-03-03. Verifique se não está usando DD/MM/AAAA.";
                 statusDiv.style.color = '#cc0000';
                 return;
             }
@@ -595,11 +595,13 @@
                 generatedDates = generateDatesInRange(startStr, endStr, jsDay);
                 
                 if (generatedDates.length === 0) {
-                    statusDiv.textContent = "Nenhuma data encontrada no intervalo para o dia da semana selecionado.";
+                    statusDiv.textContent = "Nenhuma data encontrada no intervalo para o dia da semana selecionado. Verifique se o intervalo está correto.";
                     statusDiv.style.color = '#cc0000';
                     return;
                 }
                 
+                console.log("Datas Geradas Prontas para Salvar:", docId, generatedDates); // LOG DE DEBUG
+
                 // Salva no Firestore
                 await setDoc(doc(db, "calendario", docId), {
                     datas: generatedDates
@@ -652,6 +654,12 @@
             // Limpa o texto, remove linhas vazias e duplicações, e garante o formato AAAA-MM-DD
             const rawDates = element.value.split('\n').map(d => d.trim()).filter(d => d.length === 10 && d.includes('-'));
             const datasUnicas = Array.from(new Set(rawDates)).sort();
+
+            if (rawDates.some(d => !/^\d{4}-\d{2}-\d{2}$/.test(d))) {
+                 alert("ATENÇÃO: Algumas datas parecem estar no formato incorreto. Use AAAA-MM-DD (ex: 2026-03-03).");
+            }
+            
+            console.log("Datas Manuais Prontas para Salvar:", docId, datasUnicas); // LOG DE DEBUG
 
             setDoc(doc(db, "calendario", docId), {
                 datas: datasUnicas
