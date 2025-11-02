@@ -58,14 +58,14 @@
             </select>
 
             <form id="form-participante">
-                <input type="text" id="participante-id" placeholder="ID do Catequizando (Ex: p001)" required>
+                <!-- ID MANUAL REMOVIDO: O ID será gerado automaticamente pelo Firestore -->
                 <input type="text" id="participante-nome" placeholder="Nome Completo" required>
-                <button type="submit">Adicionar/Atualizar Catequizando</button>
+                <button type="submit">Adicionar Catequizando</button>
             </form>
 
             <h3>Adicionar Catequizandos em Lote</h3>
-            <p>Formato: ID,Nome (uma por linha, vincular à turma selecionada acima)</p>
-            <textarea id="participantes-lote" rows="5" placeholder="p001,Ana Costa&#10;p002,Bruno Lopes"></textarea>
+            <p>Formato: Nome Completo (uma por linha, o ID será gerado automaticamente)</p>
+            <textarea id="participantes-lote" rows="5" placeholder="Ana Costa&#10;Bruno Lopes"></textarea>
             <button onclick="adicionarParticipantesEmLote()">Adicionar em Lote</button>
         </section>
         
@@ -419,32 +419,31 @@
         }
 
         /**
-         * Adiciona ou Altera um Catequizando individualmente.
+         * Adiciona um Catequizando individualmente, com ID gerado automaticamente.
          */
         function adicionarParticipanteIndividual() {
             const turmaId = document.getElementById('turma-selecionada-participante').value;
-            const id = document.getElementById('participante-id').value.trim();
             const nome = document.getElementById('participante-nome').value.trim();
 
-            if (!turmaId || !id || !nome) {
-                alert("Preencha todos os campos e selecione a Turma.");
+            if (!turmaId || !nome) {
+                alert("Preencha o nome e selecione a Turma.");
                 return;
             }
 
-            // CORREÇÃO: Usando doc() e setDoc() modulares
-            setDoc(doc(db, "participantes", id), {
+            // Mudar para addDoc para auto-gerar o ID
+            addDoc(collection(db, "participantes"), {
                 nome: nome,
                 turma_id: turmaId
-            }, { merge: true })
+            })
             .then(() => {
-                alert(`Catequizando ${nome} adicionado/atualizado na Turma ${turmaId}!`);
+                alert(`Catequizando ${nome} adicionado na Turma ${turmaId} com ID automático!`);
                 document.getElementById('form-participante').reset();
             })
-            .catch(error => console.error("Erro ao adicionar/atualizar catequizando:", error));
+            .catch(error => console.error("Erro ao adicionar catequizando:", error));
         }
 
         /**
-         * Adiciona ou Altera Catequizandos em Lote.
+         * Adiciona Catequizandos em Lote, com IDs gerados automaticamente.
          */
         function adicionarParticipantesEmLote() {
             const turmaId = document.getElementById('turma-selecionada-participante').value;
@@ -455,20 +454,20 @@
             }
 
             const linhas = loteTexto.split('\n');
-            const batch = writeBatch(db); // Usa writeBatch modular
+            const batch = writeBatch(db); 
 
             linhas.forEach(linha => {
-                const [id, nome] = linha.split(',').map(s => s.trim());
-                if (id && nome) {
-                    // CORREÇÃO: Usando doc() modular
-                    const participanteRef = doc(db, "participantes", id);
-                    batch.set(participanteRef, { nome, turma_id: turmaId }, { merge: true });
+                const nome = linha.trim(); // Apenas o nome é esperado
+                if (nome) {
+                    // Gera um novo ID de documento no lado do cliente
+                    const participanteRef = doc(collection(db, "participantes")); 
+                    batch.set(participanteRef, { nome, turma_id: turmaId });
                 }
             });
 
             batch.commit()
                 .then(() => {
-                    alert("Catequizandos em lote adicionados/atualizados!");
+                    alert("Catequizandos em lote adicionados com IDs automáticos!");
                     document.getElementById('participantes-lote').value = '';
                 })
                 .catch(error => console.error("Erro ao adicionar participantes em lote:", error));
