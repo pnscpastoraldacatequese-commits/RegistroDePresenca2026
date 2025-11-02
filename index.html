@@ -77,7 +77,7 @@
             <h3>Adicionar Turmas em Lote</h3>
             <p>Formato: ID,Nome,Catequista,ChaveSecreta,DiaDaSemana (uma por linha)</p>
             <textarea id="turmas-lote" rows="5" placeholder="A1,Eucaristia A,Maria Silva,senha123,terca&#10;B2,Crisma B,João Souza,chave456,sabado"></textarea>
-            <button onclick="adicionarTurmasEmLote()">Adicionar em Lote</button>
+            <button id="btn-adicionar-turmas-lote">Adicionar em Lote</button>
             
             <h3>Turmas Existentes (Clique para Editar)</h3>
             <ul id="lista-turmas"></ul>
@@ -98,7 +98,7 @@
             <h3>Adicionar Catequizandos em Lote</h3>
             <p>Formato: Nome Completo (uma por linha, o ID será gerado automaticamente)</p>
             <textarea id="participantes-lote" rows="5" placeholder="Ana Costa&#10;Bruno Lopes"></textarea>
-            <button onclick="adicionarParticipantesEmLote()">Adicionar em Lote</button>
+            <button id="btn-adicionar-participantes-lote">Adicionar em Lote</button>
         </section>
 
         <!-- Gerenciar Calendário -->
@@ -131,7 +131,7 @@
                     <option value="missas">Datas de Missa</option>
                 </select>
 
-                <button onclick="salvarRangeDatas()">Gerar Datas e SALVAR no Firestore</button>
+                <button id="btn-salvar-range-datas">Gerar Datas e SALVAR no Firestore</button>
                 <p id="range-status" style="margin-top: 10px; font-size: 0.9em;"></p>
             </div>
 
@@ -141,24 +141,24 @@
             <h3>Encontros (Terça)</h3>
             <p>Documento: <code>calendario/encontros_terca</code></p>
             <textarea id="datas-terca" rows="3" placeholder="2026-03-03&#10;2026-03-10"></textarea>
-            <button onclick="salvarDatas('encontros_terca')">Salvar Encontros Terça</button>
+            <button id="btn-salvar-terca">Salvar Encontros Terça</button>
 
             <h3>Encontros (Quarta)</h3>
             <p>Documento: <code>calendario/encontros_quarta</code></p>
             <textarea id="datas-quarta" rows="3" placeholder="2026-03-04&#10;2026-03-11"></textarea>
-            <button onclick="salvarDatas('encontros_quarta')">Salvar Encontros Quarta</button>
+            <button id="btn-salvar-quarta">Salvar Encontros Quarta</button>
 
             <h3>Encontros (Sábado)</h3>
             <p>Documento: <code>calendario/encontros_sabado</code></p>
             <textarea id="datas-sabado" rows="3" placeholder="2026-03-07&#10;2026-03-14"></textarea>
-            <button onclick="salvarDatas('encontros_sabado')">Salvar Encontros Sábado</button>
+            <button id="btn-salvar-sabado">Salvar Encontros Sábado</button>
             
             <hr style="margin: 15px 0;">
 
             <h3>Datas de Missa</h3>
             <p>Documento: <code>calendario/missas</code></p>
             <textarea id="datas-missas" rows="3" placeholder="2026-03-01&#10;2026-03-08 (Datas de missa obrigatória)"></textarea>
-            <button onclick="salvarDatas('missas')">Salvar Datas de Missa</button>
+            <button id="btn-salvar-missas">Salvar Datas de Missa</button>
         </section>
         
         <section>
@@ -167,7 +167,7 @@
             <select id="turma-selecionada-relatorio" required>
                 <option value="">Carregando Turmas...</option>
             </select>
-            <button onclick="gerarRelatorio()">Gerar Relatório</button>
+            <button id="btn-gerar-relatorio">Gerar Relatório</button>
             <div id="resultado-relatorio"></div>
         </section>
     </div>
@@ -279,6 +279,19 @@
                     e.preventDefault();
                     adicionarParticipanteIndividual();
                 });
+                
+                // CORREÇÃO DE ESCOPO: Adiciona event listeners para botões que chamavam funções globais
+                document.getElementById('btn-adicionar-turmas-lote').addEventListener('click', adicionarTurmasEmLote);
+                document.getElementById('btn-adicionar-participantes-lote').addEventListener('click', adicionarParticipantesEmLote);
+                document.getElementById('btn-salvar-range-datas').addEventListener('click', salvarRangeDatas);
+                document.getElementById('btn-gerar-relatorio').addEventListener('click', gerarRelatorio);
+                
+                // Listeners para botões de salvar data manual
+                document.getElementById('btn-salvar-terca').addEventListener('click', () => salvarDatas('encontros_terca'));
+                document.getElementById('btn-salvar-quarta').addEventListener('click', () => salvarDatas('encontros_quarta'));
+                document.getElementById('btn-salvar-sabado').addEventListener('click', () => salvarDatas('encontros_sabado'));
+                document.getElementById('btn-salvar-missas').addEventListener('click', () => salvarDatas('missas'));
+
             }
         };
 
